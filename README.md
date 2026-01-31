@@ -15,6 +15,16 @@ npm install
 npm run build
 ```
 
+### Dev (auto rebuild on save)
+
+```bash
+npm run dev
+```
+
+Then:
+- `chrome://extensions` → your extension → **Reload**
+- Refresh the shopping tab to re-inject the content script
+
 ### Load in Chrome
 
 - Open `chrome://extensions`
@@ -25,5 +35,5 @@ npm run build
 ### Quick test
 
 - Visit a product page on American Eagle / ZARA / H&M
-- You should see a small **PinkVanity (MVP)** overlay in the bottom-right
+- You should see a small **PinkVanity (MVP)** overlay in the top-right
 - Click **Options** to set measurements (stored locally)

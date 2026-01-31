@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build-extension.mjs",
+    "dev": "node scripts/dev-extension.mjs",
     "typecheck": "tsc --noEmit",
     "clean": "node scripts/clean.mjs"
   },

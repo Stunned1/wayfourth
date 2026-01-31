@@ -7,7 +7,7 @@ type NavItem = {
 };
 
 const NAV_ITEMS: readonly NavItem[] = [
-  { href: '/dashboard', label: 'Dashboard', description: 'Overview + quick actions' }
+  { href: '/dashboard', label: 'Dashboard', description: 'Writing surface' }
 ];
 
 export function SidebarNav() {

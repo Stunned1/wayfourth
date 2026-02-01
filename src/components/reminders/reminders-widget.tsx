@@ -100,7 +100,11 @@ export function RemindersWidget() {
       .delete()
       .eq('id', reminderId);
 
-    if (!error) {
+    if (error) {
+      console.error('Delete error:', error);
+      alert(`Failed to delete reminder: ${error.message}`);
+    } else {
+      console.log('Successfully deleted reminder:', reminderId);
       // Remove from UI
       setReminders(prev => prev.filter(r => r.id !== reminderId));
     }
@@ -188,10 +192,10 @@ export function RemindersWidget() {
         </div>
       </div>
 
-      {/* Modal Overlay */}
+      {/* Modal Overlay - Fixed for calendar overflow */}
       {modal.type === 'open' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl my-8">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-zinc-50">Create Reminder</h3>
               <button
@@ -235,8 +239,8 @@ export function RemindersWidget() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
+              <div className="grid grid-cols-2 gap-3 relative">
+                <div className="relative z-10">
                   <label className="mb-1.5 block text-sm font-medium text-zinc-300">
                     Date
                   </label>
@@ -245,7 +249,7 @@ export function RemindersWidget() {
                     onChange={setRemindDate}
                   />
                 </div>
-                <div>
+                <div className="relative z-10">
                   <label className="mb-1.5 block text-sm font-medium text-zinc-300">
                     Time
                   </label>
@@ -256,6 +260,9 @@ export function RemindersWidget() {
                   />
                 </div>
               </div>
+
+              {/* Extra padding to ensure calendar has room */}
+              <div className="min-h-[280px]"></div>
 
               <div className="flex gap-3 pt-2">
                 <button

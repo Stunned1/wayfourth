@@ -43,7 +43,7 @@ export async function GET(request: Request) {
           await transporter.sendMail({
             from: process.env.EMAIL_USER,
             to: recipientEmail,
-            subject: '', // Most SMS gateways ignore the subject
+            subject: 'Wayfourth Reminder', // Most SMS gateways ignore the subject
             text: reminder.message,
           });
 

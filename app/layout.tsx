@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import './globals.css';
-
 // 1. Import the Poller
 import { ReminderPoller } from '@/components/reminders/reminder-poller';
 
+import { CursorGlow } from '@/components/ui/cursor-glow';
 
 export const metadata: Metadata = {
   title: 'Wayfourth',
@@ -20,6 +20,7 @@ export default function RootLayout({
       <body className="min-h-screen bg-zinc-950 text-zinc-50 antialiased">
       <ReminderPoller />
         {children}
+        <CursorGlow />
       </body>
     </html>
   );

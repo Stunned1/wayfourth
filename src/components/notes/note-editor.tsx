@@ -6,6 +6,7 @@ import type { JournalEntry } from '@/types/journal-entry.types';
 import { PromptsDrawer } from '@/components/notes/prompts-drawer';
 import { VentingRibbon } from '@/components/notes/venting-ribbon';
 import { VentingHintOverlay } from '@/components/notes/venting-hint-overlay';
+import { formatEntryDate } from '@/utils/journal/format-entry-date';
 
 export function NoteEditor(props: {
   readonly note: JournalEntry | null;
@@ -18,6 +19,8 @@ export function NoteEditor(props: {
   readonly onChangeAnswers: (next: { readonly p1Answer: string; readonly p2Answer: string }) => void;
   readonly onToggleVenting: () => void;
 }) {
+  const title = props.note ? formatEntryDate(props.note.entryDate) : 'Journal';
+
   return (
     <section className="flex min-h-[70vh] flex-col">
       <div className="border-b border-zinc-900 px-5 py-4">
@@ -28,7 +31,7 @@ export function NoteEditor(props: {
             type="button"
           >
             <div className="truncate text-sm font-semibold tracking-tight text-zinc-100">
-              Previous Entries
+              {title}
             </div>
             <div className="shrink-0 text-sm text-zinc-400">{props.entriesCount}</div>
           </button>

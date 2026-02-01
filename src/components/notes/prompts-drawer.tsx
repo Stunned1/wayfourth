@@ -62,7 +62,7 @@ export function PromptsDrawer(props: {
         ].join(' ')}
       >
         <div className="flex items-center justify-between gap-3 border-b border-zinc-900 px-4 py-3">
-          <div className="text-sm font-semibold text-zinc-100">Question prompts</div>
+          <div className="text-sm font-semibold text-zinc-100">Optional Questions</div>
         </div>
 
         <div className="stylized-scrollbar flex-1 overflow-auto p-4">

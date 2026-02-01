@@ -11,7 +11,6 @@ export function Topbar() {
           <Link className="text-sm font-semibold tracking-tight text-zinc-50" href="/dashboard">
             Wayfourth
           </Link>
-          <div className="hidden text-xs text-zinc-500 sm:block">Hackathon skeleton</div>
         </div>
 
         <div className="flex items-center gap-3">

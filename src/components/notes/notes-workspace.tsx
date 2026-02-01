@@ -19,7 +19,7 @@ const LAST_VENT_SUBMIT_AT_KEY = 'wf_last_vent_submit_at';
 const LAST_VENT_ENTRY_ID_KEY = 'wf_last_vent_entry_id';
 
 function getTodayIsoDate(): string {
-  // YYYY-MM-DD (local time is fine for hackathon; switch to timezone-aware logic later)
+  // YYYY-MM-DD (local time is fine for now; switch to timezone-aware logic later)
   const now = new Date();
   const y = now.getFullYear();
   const m = String(now.getMonth() + 1).padStart(2, '0');
@@ -184,7 +184,7 @@ export function NotesWorkspace(_props: { readonly username: string }) {
 
     setEntries((prev) => upsertEntry(prev, updated));
 
-    // Debounced save to Supabase (hackathon-friendly).
+    // Debounced save to Supabase.
     pendingSaveIdRef.current = updated.id;
     if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
     saveTimerRef.current = window.setTimeout(async () => {

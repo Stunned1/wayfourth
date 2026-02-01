@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+import { useRouteTransition } from '@/components/layout/route-transition-provider';
+
 type NavItem = {
   readonly href: string;
   readonly label: string;
@@ -11,9 +13,9 @@ type NavItem = {
 };
 
 const NAV_ITEMS: readonly NavItem[] = [
-  { href: '/dashboard', label: 'Journal', description: 'Writing surface', match: 'exact' },
-  { href: '/dashboard/reminders', label: 'Reminders', description: 'Quick widget', match: 'startsWith' },
-  { href: '/dashboard/baby', label: 'Baby Tracker', description: 'Feeding, sleep & more', match: 'startsWith' }
+  { href: '/dashboard', label: 'You', description: 'All about you...', match: 'exact' },
+  { href: '/dashboard/reminders', label: 'Now', description: 'Set reminders...', match: 'startsWith' },
+  { href: '/dashboard/baby', label: 'Them', description: 'More for your baby...', match: 'startsWith' }
 ];
 
 function isActive(pathname: string, item: NavItem): boolean {
@@ -25,10 +27,11 @@ function isActive(pathname: string, item: NavItem): boolean {
 
 export function SidebarNav() {
   const pathname = usePathname();
+  const { navigate } = useRouteTransition();
 
   return (
     <aside className="rounded-2xl border border-zinc-900 bg-zinc-950/60 p-4">
-      <div className="text-xs font-medium uppercase tracking-wide text-zinc-500">Navigation</div>
+      <div className="text-xs font-medium uppercase tracking-wide text-zinc-500">Routes</div>
       <nav className="mt-3 space-y-1">
         {NAV_ITEMS.map((item) => {
           const active = isActive(pathname ?? '', item);
@@ -41,6 +44,10 @@ export function SidebarNav() {
                   : 'text-zinc-200 hover:bg-zinc-900/40 hover:text-zinc-50'
               }`}
               href={item.href}
+              onClick={(e) => {
+                e.preventDefault();
+                navigate(item.href);
+              }}
             >
               <div className="font-medium">{item.label}</div>
               {item.description ? (

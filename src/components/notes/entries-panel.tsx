@@ -1,17 +1,7 @@
 "use client";
 
 import type { JournalEntry } from '@/types/journal-entry.types';
-
-function formatEntryDate(entryDate: string): string {
-  // Hackathon-friendly: if ISO, show a nicer label; otherwise fall back.
-  if (/^\d{4}-\d{2}-\d{2}$/.test(entryDate)) {
-    const [y, m, d] = entryDate.split('-').map(Number);
-    const dt = new Date(y, (m ?? 1) - 1, d ?? 1);
-    return dt.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-  }
-
-  return entryDate;
-}
+import { formatEntryDate } from '@/utils/journal/format-entry-date';
 
 export function EntriesPanel(props: {
   readonly notes: readonly JournalEntry[];

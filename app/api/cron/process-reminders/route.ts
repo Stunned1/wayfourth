@@ -39,11 +39,18 @@ export async function GET(request: Request) {
     // 4. Send texts and update DB
     const results = await Promise.all(
       reminders.map(async (reminder) => {
+
+
+        let toPhone = reminder.phone_number.trim();
+        if (!toPhone.startsWith('+')) {
+          // Remove dashes/spaces and add +1
+          toPhone = `+1${toPhone.replace(/\D/g, '')}`; 
+        }
         try {
           // Send via Twilio
           await twilioClient.messages.create({
             body: reminder.message,
-            to: reminder.phone_number,
+            to: toPhone,
             from: process.env.TWILIO_PHONE_NUMBER,
           });
 

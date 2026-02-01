@@ -30,6 +30,11 @@ export function CursorGlow() {
       setVisible(true);
       targetRef.current = { x: e.clientX, y: e.clientY };
       if (!currentRef.current) currentRef.current = { x: e.clientX, y: e.clientY };
+
+      // Dot follows instantly (no delay).
+      document.documentElement.style.setProperty('--cursor-dot-x', `${e.clientX}px`);
+      document.documentElement.style.setProperty('--cursor-dot-y', `${e.clientY}px`);
+
       if (rafRef.current == null) rafRef.current = window.requestAnimationFrame(tick);
     }
 
@@ -50,6 +55,7 @@ export function CursorGlow() {
       const nextY = current.y + (target.y - current.y) * lerp;
       currentRef.current = { x: nextX, y: nextY };
 
+      // Glow follows with delay.
       document.documentElement.style.setProperty('--cursor-x', `${nextX}px`);
       document.documentElement.style.setProperty('--cursor-y', `${nextY}px`);
 

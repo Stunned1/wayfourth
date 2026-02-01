@@ -10,13 +10,15 @@ body {
 :root {
   --cursor-x: 50vw;
   --cursor-y: 50vh;
+  --cursor-dot-x: 50vw;
+  --cursor-dot-y: 50vh;
 }
 
 .cursor-glow {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 5;
+  z-index: 9999;
   opacity: 0.9;
 
   /* “Dim candle” vibe: warm core + soft falloff */
@@ -36,13 +38,13 @@ body {
 
 .cursor-dot {
   position: fixed;
-  left: var(--cursor-x);
-  top: var(--cursor-y);
+  left: var(--cursor-dot-x);
+  top: var(--cursor-dot-y);
   width: 8px;
   height: 8px;
   transform: translate(-50%, -50%);
   pointer-events: none;
-  z-index: 6;
+  z-index: 10000;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.9);
   box-shadow: 0 0 12px rgba(255, 236, 200, 0.35);

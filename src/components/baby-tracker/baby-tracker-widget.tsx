@@ -26,18 +26,26 @@ export function BabyTrackerWidget() {
   const activeSleep = logs.find((l) => l.kind === 'sleep' && l.sleep_start && !l.sleep_end) ?? null;
 
   // Feeding form state
-  const [feedingType, setFeedingType] = useState<'breast' | 'bottle' | 'breast_pumped' | null>(null);
+  const [feedingType, setFeedingType] = useState<'breast' | 'formula' | 'breast_pumped' | null>(null);
   const [feedingDuration, setFeedingDuration] = useState('');
   const [feedingAmount, setFeedingAmount] = useState('');
   const [feedingUnit, setFeedingUnit] = useState<'ml' | 'oz'>('ml'); // Default to ml
-  const [feedingTime, setFeedingTime] = useState('');
+  const [feedingTimeHour, setFeedingTimeHour] = useState('');
+  const [feedingTimeMinute, setFeedingTimeMinute] = useState('');
+  const [feedingTimePeriod, setFeedingTimePeriod] = useState<'AM' | 'PM'>('AM');
 
   // Diaper form state
-  const [diaperTime, setDiaperTime] = useState('');
+  const [diaperTimeHour, setDiaperTimeHour] = useState('');
+  const [diaperTimeMinute, setDiaperTimeMinute] = useState('');
+  const [diaperTimePeriod, setDiaperTimePeriod] = useState<'AM' | 'PM'>('AM');
 
   // Sleep form state
-  const [sleepStartTime, setSleepStartTime] = useState('');
-  const [sleepEndTime, setSleepEndTime] = useState('');
+  const [sleepStartTimeHour, setSleepStartTimeHour] = useState('');
+  const [sleepStartTimeMinute, setSleepStartTimeMinute] = useState('');
+  const [sleepStartTimePeriod, setSleepStartTimePeriod] = useState<'AM' | 'PM'>('AM');
+  const [sleepEndTimeHour, setSleepEndTimeHour] = useState('');
+  const [sleepEndTimeMinute, setSleepEndTimeMinute] = useState('');
+  const [sleepEndTimePeriod, setSleepEndTimePeriod] = useState<'AM' | 'PM'>('AM');
 
   // Fetch logs and auto-delete old entries
   useEffect(() => {
@@ -88,7 +96,7 @@ export function BabyTrackerWidget() {
     if (!session) { setSaving(false); return; }
 
     let amountMl: number | null = null;
-    if ((feedingType === 'bottle' || feedingType === 'breast_pumped') && feedingAmount) {
+    if ((feedingType === 'formula' || feedingType === 'breast_pumped') && feedingAmount) {
       amountMl = Number(feedingAmount);
       if (feedingUnit === 'oz') {
         amountMl = amountMl * 29.5735; // Convert oz to ml
@@ -97,10 +105,19 @@ export function BabyTrackerWidget() {
 
     // Use custom time if provided, otherwise use current time
     let loggedAt: string;
-    if (feedingTime) {
+    if (feedingTimeHour && feedingTimeMinute) {
+      let hour = parseInt(feedingTimeHour);
+      const minute = parseInt(feedingTimeMinute);
+      
+      // Convert to 24-hour format
+      if (feedingTimePeriod === 'PM' && hour !== 12) {
+        hour += 12;
+      } else if (feedingTimePeriod === 'AM' && hour === 12) {
+        hour = 0;
+      }
+      
       const now = new Date();
-      const [hours, minutes] = feedingTime.split(':');
-      now.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      now.setHours(hour, minute, 0, 0);
       loggedAt = now.toISOString();
     } else {
       loggedAt = new Date().toISOString();
@@ -127,7 +144,9 @@ export function BabyTrackerWidget() {
       setFeedingType(null);
       setFeedingDuration('');
       setFeedingAmount('');
-      setFeedingTime('');
+      setFeedingTimeHour('');
+      setFeedingTimeMinute('');
+      setFeedingTimePeriod('AM');
       setModal({ type: 'closed' });
     } else if (error) {
       console.error('Error logging feeding:', error);
@@ -138,15 +157,24 @@ export function BabyTrackerWidget() {
   }
 
   // Diaper — instant log, no modal
-  async function handleLogDiaper(diaperType: 'wet' | 'dirty' | 'both', customTime?: string) {
+  async function handleLogDiaper(diaperType: 'wet' | 'dirty' | 'both', customTimeHour?: string, customTimeMinute?: string, customTimePeriod?: 'AM' | 'PM') {
     const session = await getSession();
     if (!session) return;
 
     let loggedAt: string;
-    if (customTime) {
+    if (customTimeHour && customTimeMinute && customTimePeriod) {
+      let hour = parseInt(customTimeHour);
+      const minute = parseInt(customTimeMinute);
+      
+      // Convert to 24-hour format
+      if (customTimePeriod === 'PM' && hour !== 12) {
+        hour += 12;
+      } else if (customTimePeriod === 'AM' && hour === 12) {
+        hour = 0;
+      }
+      
       const now = new Date();
-      const [hours, minutes] = customTime.split(':');
-      now.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      now.setHours(hour, minute, 0, 0);
       loggedAt = now.toISOString();
     } else {
       loggedAt = new Date().toISOString();
@@ -186,10 +214,19 @@ export function BabyTrackerWidget() {
     if (activeSleep) {
       // End the active sleep
       let endTime: string;
-      if (sleepEndTime) {
+      if (sleepEndTimeHour && sleepEndTimeMinute) {
+        let hour = parseInt(sleepEndTimeHour);
+        const minute = parseInt(sleepEndTimeMinute);
+        
+        // Convert to 24-hour format
+        if (sleepEndTimePeriod === 'PM' && hour !== 12) {
+          hour += 12;
+        } else if (sleepEndTimePeriod === 'AM' && hour === 12) {
+          hour = 0;
+        }
+        
         const now = new Date();
-        const [hours, minutes] = sleepEndTime.split(':');
-        now.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        now.setHours(hour, minute, 0, 0);
         endTime = now.toISOString();
       } else {
         endTime = new Date().toISOString();
@@ -206,7 +243,9 @@ export function BabyTrackerWidget() {
         setLogs((prev) => prev.map((l) => (l.id === activeSleep.id ? data : l)).sort((a, b) => 
           new Date(b.logged_at).getTime() - new Date(a.logged_at).getTime()
         ));
-        setSleepEndTime('');
+        setSleepEndTimeHour('');
+        setSleepEndTimeMinute('');
+        setSleepEndTimePeriod('AM');
       } else if (error) {
         console.error('Error ending sleep:', error);
         alert('Failed to end sleep: ' + error.message);
@@ -214,10 +253,19 @@ export function BabyTrackerWidget() {
     } else {
       // Start a new sleep
       let startTime: string;
-      if (sleepStartTime) {
+      if (sleepStartTimeHour && sleepStartTimeMinute) {
+        let hour = parseInt(sleepStartTimeHour);
+        const minute = parseInt(sleepStartTimeMinute);
+        
+        // Convert to 24-hour format
+        if (sleepStartTimePeriod === 'PM' && hour !== 12) {
+          hour += 12;
+        } else if (sleepStartTimePeriod === 'AM' && hour === 12) {
+          hour = 0;
+        }
+        
         const now = new Date();
-        const [hours, minutes] = sleepStartTime.split(':');
-        now.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        now.setHours(hour, minute, 0, 0);
         startTime = now.toISOString();
       } else {
         startTime = new Date().toISOString();
@@ -239,7 +287,9 @@ export function BabyTrackerWidget() {
         setLogs((prev) => [data, ...prev].sort((a, b) => 
           new Date(b.logged_at).getTime() - new Date(a.logged_at).getTime()
         ));
-        setSleepStartTime('');
+        setSleepStartTimeHour('');
+        setSleepStartTimeMinute('');
+        setSleepStartTimePeriod('AM');
       } else if (error) {
         console.error('Error starting sleep:', error);
         alert('Failed to start sleep: ' + error.message);
@@ -250,7 +300,7 @@ export function BabyTrackerWidget() {
 
   // Log completed sleep session with both start and end times
   async function handleLogCompletedSleep() {
-    if (!sleepStartTime || !sleepEndTime) {
+    if (!sleepStartTimeHour || !sleepStartTimeMinute || !sleepEndTimeHour || !sleepEndTimeMinute) {
       alert('Please provide both start and end times');
       return;
     }
@@ -266,11 +316,30 @@ export function BabyTrackerWidget() {
     const startDate = new Date(now);
     const endDate = new Date(now);
 
-    const [startHours, startMinutes] = sleepStartTime.split(':');
-    const [endHours, endMinutes] = sleepEndTime.split(':');
+    // Parse start time
+    let startHour = parseInt(sleepStartTimeHour);
+    const startMinute = parseInt(sleepStartTimeMinute);
     
-    startDate.setHours(parseInt(startHours), parseInt(startMinutes), 0, 0);
-    endDate.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
+    // Convert to 24-hour format
+    if (sleepStartTimePeriod === 'PM' && startHour !== 12) {
+      startHour += 12;
+    } else if (sleepStartTimePeriod === 'AM' && startHour === 12) {
+      startHour = 0;
+    }
+
+    // Parse end time
+    let endHour = parseInt(sleepEndTimeHour);
+    const endMinute = parseInt(sleepEndTimeMinute);
+    
+    // Convert to 24-hour format
+    if (sleepEndTimePeriod === 'PM' && endHour !== 12) {
+      endHour += 12;
+    } else if (sleepEndTimePeriod === 'AM' && endHour === 12) {
+      endHour = 0;
+    }
+    
+    startDate.setHours(startHour, startMinute, 0, 0);
+    endDate.setHours(endHour, endMinute, 0, 0);
 
     // If end time is before start time, assume sleep crossed midnight
     if (endDate <= startDate) {
@@ -293,8 +362,12 @@ export function BabyTrackerWidget() {
       setLogs((prev) => [data, ...prev].sort((a, b) => 
         new Date(b.logged_at).getTime() - new Date(a.logged_at).getTime()
       ));
-      setSleepStartTime('');
-      setSleepEndTime('');
+      setSleepStartTimeHour('');
+      setSleepStartTimeMinute('');
+      setSleepStartTimePeriod('AM');
+      setSleepEndTimeHour('');
+      setSleepEndTimeMinute('');
+      setSleepEndTimePeriod('AM');
       setModal({ type: 'closed' });
     } else if (error) {
       console.error('Error logging sleep:', error);
@@ -400,11 +473,11 @@ export function BabyTrackerWidget() {
     // ─── FEEDING STATISTICS ───
     const feedingLogs = weekLogs.filter(l => l.kind === 'feeding');
     
-    // Average daily volume (bottle/pumped only)
-    const bottleFeedings = feedingLogs.filter(l => 
-      (l.feeding_type === 'bottle' || l.feeding_type === 'breast_pumped') && l.feeding_amount_ml
+    // Average daily volume (formula/pumped only)
+    const formulaFeedings = feedingLogs.filter(l => 
+      (l.feeding_type === 'formula' || l.feeding_type === 'breast_pumped') && l.feeding_amount_ml
     );
-    const totalVolume = bottleFeedings.reduce((sum, log) => sum + (log.feeding_amount_ml || 0), 0);
+    const totalVolume = formulaFeedings.reduce((sum, log) => sum + (log.feeding_amount_ml || 0), 0);
     const avgDailyVolume = daysWithData > 0 ? totalVolume / daysWithData : 0;
 
     // Average feeds per day
@@ -485,7 +558,7 @@ export function BabyTrackerWidget() {
     switch (log.kind) {
       case 'feeding':
         return [
-          log.feeding_type === 'breast' ? 'Breast' : log.feeding_type === 'bottle' ? 'Bottle' : log.feeding_type === 'breast_pumped' ? 'Breast (pumped)' : null,
+          log.feeding_type === 'breast' ? 'Breast' : log.feeding_type === 'formula' ? 'Formula' : log.feeding_type === 'breast_pumped' ? 'Breast (pumped)' : null,
           log.feeding_duration_minutes ? `${log.feeding_duration_minutes} min` : null,
           log.feeding_amount_ml ? `${Math.round(log.feeding_amount_ml)} ml` : null,
         ]
@@ -522,19 +595,40 @@ export function BabyTrackerWidget() {
       <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6 shadow-lg">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold tracking-tight text-zinc-50">Baby Tracker</h2>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setModal({ type: 'open', kind: 'daily' })}
-              className="rounded-lg bg-zinc-800/60 px-3 py-1.5 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800"
-            >
-              📊 Daily
-            </button>
-            <button
-              onClick={() => setModal({ type: 'open', kind: 'weekly' })}
-              className="rounded-lg bg-zinc-800/60 px-3 py-1.5 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800"
-            >
-              📈 Weekly
-            </button>
+          <div className="flex gap-6 mt-4">
+            {/* Daily button with hand-drawn arrow */}
+            <div className="relative">
+              <div className="absolute -top-9 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none">
+                <span style={{ fontFamily: "'Comic Sans MS', 'Chalkboard SE', cursive" }} className="text-xs text-zinc-300 whitespace-nowrap italic">Check in?</span>
+                <svg width="24" height="28" viewBox="0 0 24 28" fill="none">
+                  <path d="M12 2 C 10 8, 14 16, 12 24" stroke="white" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
+                  <path d="M8 20 L12 25 L16 20" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                </svg>
+              </div>
+              <button
+                onClick={() => setModal({ type: 'open', kind: 'daily' })}
+                className="rounded-lg bg-zinc-800/60 px-3 py-1.5 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800"
+              >
+                Daily
+              </button>
+            </div>
+
+            {/* Weekly button with hand-drawn arrow below */}
+            <div className="relative">
+              <button
+                onClick={() => setModal({ type: 'open', kind: 'weekly' })}
+                className="rounded-lg bg-zinc-800/60 px-3 py-1.5 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800"
+              >
+                Weekly
+              </button>
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 flex flex-col items-center pointer-events-none">
+                <svg width="24" height="28" viewBox="0 0 24 28" fill="none">
+                  <path d="M12 4 C 10 12, 14 20, 12 26" stroke="white" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
+                  <path d="M8 8 L12 3 L16 8" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                </svg>
+                <span style={{ fontFamily: "'Comic Sans MS', 'Chalkboard SE', cursive" }} className="text-xs text-zinc-300 whitespace-nowrap italic -mt-1">Review the week?</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -634,16 +728,42 @@ export function BabyTrackerWidget() {
             <form onSubmit={handleCreateFeeding} className="space-y-4">
               {/* Time input */}
               <div>
-                <label htmlFor="feedingTime" className="mb-1.5 block text-sm font-medium text-zinc-300">
+                <label className="mb-1.5 block text-sm font-medium text-zinc-300">
                   Time (optional)
                 </label>
-                <input
-                  id="feedingTime"
-                  type="time"
-                  value={feedingTime}
-                  onChange={(e) => setFeedingTime(e.target.value)}
-                  className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-600"
-                />
+                <div className="flex gap-2 items-center">
+                  <div className="flex-1 flex items-center gap-0 rounded-lg border border-zinc-800 bg-zinc-900 overflow-hidden">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={2}
+                      value={feedingTimeHour}
+                      onChange={(e) => setFeedingTimeHour(e.target.value.replace(/\D/g, ''))}
+                      placeholder="12"
+                      className="w-full px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 bg-transparent focus:outline-none text-center"
+                    />
+                    <span className="text-zinc-100 text-sm">:</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={2}
+                      value={feedingTimeMinute}
+                      onChange={(e) => setFeedingTimeMinute(e.target.value.replace(/\D/g, ''))}
+                      placeholder="00"
+                      className="w-full px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 bg-transparent focus:outline-none text-center"
+                    />
+                  </div>
+                  <select
+                    value={feedingTimePeriod}
+                    onChange={(e) => setFeedingTimePeriod(e.target.value as 'AM' | 'PM')}
+                    className="w-20 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-600"
+                  >
+                    <option value="AM">AM</option>
+                    <option value="PM">PM</option>
+                  </select>
+                </div>
                 <p className="mt-1 text-xs text-zinc-500">Leave blank to use current time</p>
               </div>
 
@@ -675,14 +795,14 @@ export function BabyTrackerWidget() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setFeedingType('bottle')}
+                    onClick={() => setFeedingType('formula')}
                     className={`flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
-                      feedingType === 'bottle'
+                      feedingType === 'formula'
                         ? 'border-blue-600 bg-blue-900/40 text-blue-200'
                         : 'border-zinc-800 bg-zinc-900 text-zinc-300 hover:bg-zinc-800'
                     }`}
                   >
-                    Bottle
+                    Formula
                   </button>
                 </div>
               </div>
@@ -705,8 +825,8 @@ export function BabyTrackerWidget() {
                 </div>
               )}
 
-              {/* Amount — only shown for bottle or breast (pumped) */}
-              {(feedingType === 'bottle' || feedingType === 'breast_pumped') && (
+              {/* Amount — only shown for formula or breast (pumped) */}
+              {(feedingType === 'formula' || feedingType === 'breast_pumped') && (
                 <div>
                   <label htmlFor="amount" className="mb-1.5 block text-sm font-medium text-zinc-300">
                     Amount
@@ -789,16 +909,42 @@ export function BabyTrackerWidget() {
             <div className="space-y-4">
               {/* Time input */}
               <div>
-                <label htmlFor="diaperTime" className="mb-1.5 block text-sm font-medium text-zinc-300">
+                <label className="mb-1.5 block text-sm font-medium text-zinc-300">
                   Time (optional)
                 </label>
-                <input
-                  id="diaperTime"
-                  type="time"
-                  value={diaperTime}
-                  onChange={(e) => setDiaperTime(e.target.value)}
-                  className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-600"
-                />
+                <div className="flex gap-2 items-center">
+                  <div className="flex-1 flex items-center gap-0 rounded-lg border border-zinc-800 bg-zinc-900 overflow-hidden">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={2}
+                      value={diaperTimeHour}
+                      onChange={(e) => setDiaperTimeHour(e.target.value.replace(/\D/g, ''))}
+                      placeholder="12"
+                      className="w-full px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 bg-transparent focus:outline-none text-center"
+                    />
+                    <span className="text-zinc-100 text-sm">:</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={2}
+                      value={diaperTimeMinute}
+                      onChange={(e) => setDiaperTimeMinute(e.target.value.replace(/\D/g, ''))}
+                      placeholder="00"
+                      className="w-full px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 bg-transparent focus:outline-none text-center"
+                    />
+                  </div>
+                  <select
+                    value={diaperTimePeriod}
+                    onChange={(e) => setDiaperTimePeriod(e.target.value as 'AM' | 'PM')}
+                    className="w-20 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-600"
+                  >
+                    <option value="AM">AM</option>
+                    <option value="PM">PM</option>
+                  </select>
+                </div>
                 <p className="mt-1 text-xs text-zinc-500">Leave blank to use current time</p>
               </div>
 
@@ -806,7 +952,7 @@ export function BabyTrackerWidget() {
               <div className="grid grid-cols-3 gap-2">
                 <button
                   onClick={() => {
-                    handleLogDiaper('wet', diaperTime || undefined);
+                    handleLogDiaper('wet', diaperTimeHour || undefined, diaperTimeMinute || undefined, (diaperTimeHour && diaperTimeMinute) ? diaperTimePeriod : undefined);
                     setModal({ type: 'closed' });
                   }}
                   className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800 hover:border-yellow-600"
@@ -815,7 +961,7 @@ export function BabyTrackerWidget() {
                 </button>
                 <button
                   onClick={() => {
-                    handleLogDiaper('dirty', diaperTime || undefined);
+                    handleLogDiaper('dirty', diaperTimeHour || undefined, diaperTimeMinute || undefined, (diaperTimeHour && diaperTimeMinute) ? diaperTimePeriod : undefined);
                     setModal({ type: 'closed' });
                   }}
                   className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800 hover:border-yellow-600"
@@ -824,7 +970,7 @@ export function BabyTrackerWidget() {
                 </button>
                 <button
                   onClick={() => {
-                    handleLogDiaper('both', diaperTime || undefined);
+                    handleLogDiaper('both', diaperTimeHour || undefined, diaperTimeMinute || undefined, (diaperTimeHour && diaperTimeMinute) ? diaperTimePeriod : undefined);
                     setModal({ type: 'closed' });
                   }}
                   className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800 hover:border-yellow-600"
@@ -852,8 +998,12 @@ export function BabyTrackerWidget() {
               <button
                 onClick={() => {
                   setModal({ type: 'closed' });
-                  setSleepStartTime('');
-                  setSleepEndTime('');
+                  setSleepStartTimeHour('');
+                  setSleepStartTimeMinute('');
+                  setSleepStartTimePeriod('AM');
+                  setSleepEndTimeHour('');
+                  setSleepEndTimeMinute('');
+                  setSleepEndTimePeriod('AM');
                 }}
                 className="rounded-lg p-1 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
               >
@@ -881,16 +1031,42 @@ export function BabyTrackerWidget() {
                   </div>
 
                   <div>
-                    <label htmlFor="sleepEndTime" className="mb-1.5 block text-sm font-medium text-zinc-300">
+                    <label className="mb-1.5 block text-sm font-medium text-zinc-300">
                       End Time (optional)
                     </label>
-                    <input
-                      id="sleepEndTime"
-                      type="time"
-                      value={sleepEndTime}
-                      onChange={(e) => setSleepEndTime(e.target.value)}
-                      className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-600"
-                    />
+                    <div className="flex gap-2 items-center">
+                      <div className="flex-1 flex items-center gap-0 rounded-lg border border-zinc-800 bg-zinc-900 overflow-hidden">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          maxLength={2}
+                          value={sleepEndTimeHour}
+                          onChange={(e) => setSleepEndTimeHour(e.target.value.replace(/\D/g, ''))}
+                          placeholder="12"
+                          className="w-full px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 bg-transparent focus:outline-none text-center"
+                        />
+                        <span className="text-zinc-100 text-sm">:</span>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          maxLength={2}
+                          value={sleepEndTimeMinute}
+                          onChange={(e) => setSleepEndTimeMinute(e.target.value.replace(/\D/g, ''))}
+                          placeholder="00"
+                          className="w-full px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 bg-transparent focus:outline-none text-center"
+                        />
+                      </div>
+                      <select
+                        value={sleepEndTimePeriod}
+                        onChange={(e) => setSleepEndTimePeriod(e.target.value as 'AM' | 'PM')}
+                        className="w-20 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-600"
+                      >
+                        <option value="AM">AM</option>
+                        <option value="PM">PM</option>
+                      </select>
+                    </div>
                     <p className="mt-1 text-xs text-zinc-500">Leave blank to use current time</p>
                   </div>
 
@@ -898,7 +1074,9 @@ export function BabyTrackerWidget() {
                     <button
                       onClick={() => {
                         setModal({ type: 'closed' });
-                        setSleepEndTime('');
+                        setSleepEndTimeHour('');
+                        setSleepEndTimeMinute('');
+                        setSleepEndTimePeriod('AM');
                       }}
                       className="flex-1 rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800"
                     >
@@ -929,9 +1107,14 @@ export function BabyTrackerWidget() {
                         setModal({ type: 'closed' });
                       }}
                       disabled={sleepLoading}
-                      className="w-full rounded-lg bg-purple-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-purple-700 disabled:opacity-50"
+                      className="w-full rounded-lg bg-purple-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2"
                     >
-                      🌙 Start Sleep Now
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" strokeDasharray="1,1.5"/>
+                        <circle cx="8" cy="8" r="0.8" fill="currentColor"/>
+                        <circle cx="14" cy="12" r="0.8" fill="currentColor"/>
+                      </svg>
+                      Start Sleep Now
                     </button>
 
                     <div className="relative">
@@ -948,34 +1131,86 @@ export function BabyTrackerWidget() {
                       <p className="text-sm font-medium text-zinc-300">Log completed sleep session</p>
                       
                       <div>
-                        <label htmlFor="sleepStartTime" className="mb-1.5 block text-sm font-medium text-zinc-300">
+                        <label className="mb-1.5 block text-sm font-medium text-zinc-300">
                           Start Time
                         </label>
-                        <input
-                          id="sleepStartTime"
-                          type="time"
-                          value={sleepStartTime}
-                          onChange={(e) => setSleepStartTime(e.target.value)}
-                          className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-600"
-                        />
+                        <div className="flex gap-2 items-center">
+                          <div className="flex-1 flex items-center gap-0 rounded-lg border border-zinc-800 bg-zinc-900 overflow-hidden">
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              maxLength={2}
+                              value={sleepStartTimeHour}
+                              onChange={(e) => setSleepStartTimeHour(e.target.value.replace(/\D/g, ''))}
+                              placeholder="7"
+                              className="w-full px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 bg-transparent focus:outline-none text-center"
+                            />
+                            <span className="text-zinc-100 text-sm">:</span>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              maxLength={2}
+                              value={sleepStartTimeMinute}
+                              onChange={(e) => setSleepStartTimeMinute(e.target.value.replace(/\D/g, ''))}
+                              placeholder="00"
+                              className="w-full px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 bg-transparent focus:outline-none text-center"
+                            />
+                          </div>
+                          <select
+                            value={sleepStartTimePeriod}
+                            onChange={(e) => setSleepStartTimePeriod(e.target.value as 'AM' | 'PM')}
+                            className="w-20 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-600"
+                          >
+                            <option value="AM">AM</option>
+                            <option value="PM">PM</option>
+                          </select>
+                        </div>
                       </div>
 
                       <div>
-                        <label htmlFor="sleepEndTimeComplete" className="mb-1.5 block text-sm font-medium text-zinc-300">
+                        <label className="mb-1.5 block text-sm font-medium text-zinc-300">
                           End Time
                         </label>
-                        <input
-                          id="sleepEndTimeComplete"
-                          type="time"
-                          value={sleepEndTime}
-                          onChange={(e) => setSleepEndTime(e.target.value)}
-                          className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-600"
-                        />
+                        <div className="flex gap-2 items-center">
+                          <div className="flex-1 flex items-center gap-0 rounded-lg border border-zinc-800 bg-zinc-900 overflow-hidden">
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              maxLength={2}
+                              value={sleepEndTimeHour}
+                              onChange={(e) => setSleepEndTimeHour(e.target.value.replace(/\D/g, ''))}
+                              placeholder="8"
+                              className="w-full px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 bg-transparent focus:outline-none text-center"
+                            />
+                            <span className="text-zinc-100 text-sm">:</span>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              maxLength={2}
+                              value={sleepEndTimeMinute}
+                              onChange={(e) => setSleepEndTimeMinute(e.target.value.replace(/\D/g, ''))}
+                              placeholder="30"
+                              className="w-full px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 bg-transparent focus:outline-none text-center"
+                            />
+                          </div>
+                          <select
+                            value={sleepEndTimePeriod}
+                            onChange={(e) => setSleepEndTimePeriod(e.target.value as 'AM' | 'PM')}
+                            className="w-20 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-600"
+                          >
+                            <option value="AM">AM</option>
+                            <option value="PM">PM</option>
+                          </select>
+                        </div>
                       </div>
 
                       <button
                         onClick={handleLogCompletedSleep}
-                        disabled={sleepLoading || !sleepStartTime || !sleepEndTime}
+                        disabled={sleepLoading || !sleepStartTimeHour || !sleepStartTimeMinute || !sleepEndTimeHour || !sleepEndTimeMinute}
                         className="w-full rounded-lg bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-200 disabled:opacity-50"
                       >
                         {sleepLoading ? 'Saving...' : 'Log Sleep Session'}
@@ -986,8 +1221,12 @@ export function BabyTrackerWidget() {
                   <button
                     onClick={() => {
                       setModal({ type: 'closed' });
-                      setSleepStartTime('');
-                      setSleepEndTime('');
+                      setSleepStartTimeHour('');
+                      setSleepStartTimeMinute('');
+                      setSleepStartTimePeriod('AM');
+                      setSleepEndTimeHour('');
+                      setSleepEndTimeMinute('');
+                      setSleepEndTimePeriod('AM');
                     }}
                     className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800"
                   >
@@ -1108,7 +1347,13 @@ export function BabyTrackerWidget() {
                             title={`Sleep: ${logSummary(log)}`}
                           >
                             <div className="flex items-center justify-center h-full text-xs text-white font-medium">
-                              {log.sleep_end ? `${Math.round(durationMinutes)}m` : '😴'}
+                              {log.sleep_end ? `${Math.round(durationMinutes)}m` : (
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" strokeDasharray="0.8,1.2"/>
+                                  <circle cx="8" cy="8" r="0.8" fill="white"/>
+                                  <circle cx="14" cy="12" r="0.8" fill="white"/>
+                                </svg>
+                              )}
                             </div>
                           </div>
                         );
@@ -1127,7 +1372,11 @@ export function BabyTrackerWidget() {
                             title={`Feeding: ${logSummary(log)}`}
                           >
                             <div className="flex items-center justify-center h-full text-xs text-white font-medium">
-                              🍼
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M9 3h6v3H9z" strokeDasharray="0.5,1"/>
+                                <path d="M8 6h8a2 2 0 0 1 2 2v10a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3V8a2 2 0 0 1 2-2z" strokeDasharray="1,1.5"/>
+                                <line x1="8" y1="12" x2="16" y2="12" strokeDasharray="0.5,1"/>
+                              </svg>
                             </div>
                           </div>
                         );
@@ -1135,7 +1384,36 @@ export function BabyTrackerWidget() {
 
                       // For point events (feeding without duration, diaper), show marker
                       const color = log.kind === 'feeding' ? 'blue' : log.kind === 'diaper' ? 'yellow' : 'purple';
-                      const icon = log.kind === 'feeding' ? '🍼' : log.kind === 'diaper' ? '🧷' : '😴';
+                      
+                      // Create hand-drawn icon based on type
+                      const getIcon = () => {
+                        if (log.kind === 'feeding') {
+                          return (
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M9 3h6v3H9z" strokeDasharray="0.5,1"/>
+                              <path d="M8 6h8a2 2 0 0 1 2 2v10a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3V8a2 2 0 0 1 2-2z" strokeDasharray="1,1.5"/>
+                              <line x1="8" y1="12" x2="16" y2="12" strokeDasharray="0.5,1"/>
+                            </svg>
+                          );
+                        } else if (log.kind === 'diaper') {
+                          return (
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M12 3v8" strokeDasharray="0.5,1"/>
+                              <circle cx="12" cy="13" r="2" strokeDasharray="0.5,0.8"/>
+                              <path d="M8 17c0 2 1.79 4 4 4s4-2 4-4" strokeDasharray="1,1.5"/>
+                              <path d="M16 9a4 4 0 0 1-8 0" strokeDasharray="0.5,1"/>
+                            </svg>
+                          );
+                        } else {
+                          return (
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" strokeDasharray="0.8,1.2"/>
+                              <circle cx="8" cy="8" r="0.8" fill="white"/>
+                              <circle cx="14" cy="12" r="0.8" fill="white"/>
+                            </svg>
+                          );
+                        }
+                      };
 
                       return (
                         <div
@@ -1150,7 +1428,9 @@ export function BabyTrackerWidget() {
                           }}
                           title={`${kindLabel(log.kind)}: ${logSummary(log)}`}
                         >
-                          <span className="text-sm">{icon}</span>
+                          <div className="flex items-center justify-center h-full">
+                            {getIcon()}
+                          </div>
                         </div>
                       );
                     });
@@ -1218,7 +1498,11 @@ export function BabyTrackerWidget() {
                 <div className="rounded-xl border border-purple-900/40 bg-purple-950/20 p-3 sm:p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                      <span className="text-base sm:text-lg">😴</span>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-300">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" strokeDasharray="1,1.5"/>
+                        <circle cx="8" cy="8" r="0.8" fill="currentColor"/>
+                        <circle cx="14" cy="12" r="0.8" fill="currentColor"/>
+                      </svg>
                     </div>
                     <h4 className="text-base sm:text-lg font-semibold text-purple-200">Sleep Trends</h4>
                   </div>
@@ -1281,7 +1565,11 @@ export function BabyTrackerWidget() {
                 <div className="rounded-xl border border-blue-900/40 bg-blue-950/20 p-3 sm:p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                      <span className="text-base sm:text-lg">🍼</span>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-blue-300">
+                        <path d="M9 3h6v3H9z" strokeDasharray="1,1"/>
+                        <path d="M8 6h8a2 2 0 0 1 2 2v10a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3V8a2 2 0 0 1 2-2z" strokeDasharray="1.5,2"/>
+                        <line x1="8" y1="12" x2="16" y2="12" strokeDasharray="1,1.5"/>
+                      </svg>
                     </div>
                     <h4 className="text-base sm:text-lg font-semibold text-blue-200">Feeding Patterns</h4>
                   </div>
@@ -1349,7 +1637,12 @@ export function BabyTrackerWidget() {
                 <div className="rounded-xl border border-yellow-900/40 bg-yellow-950/20 p-3 sm:p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-yellow-500/20 flex items-center justify-center">
-                      <span className="text-base sm:text-lg">🧷</span>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-300">
+                        <path d="M12 3v8" strokeDasharray="1,1.5"/>
+                        <circle cx="12" cy="13" r="2" strokeDasharray="1,1"/>
+                        <path d="M8 17c0 2 1.79 4 4 4s4-2 4-4" strokeDasharray="1.5,2"/>
+                        <path d="M16 9a4 4 0 0 1-8 0" strokeDasharray="1,1.5"/>
+                      </svg>
                     </div>
                     <h4 className="text-base sm:text-lg font-semibold text-yellow-200">Diaper Output</h4>
                   </div>
@@ -1407,7 +1700,11 @@ export function BabyTrackerWidget() {
                 {/* Reassurance Message */}
                 <div className="rounded-xl border border-green-900/40 bg-green-950/20 p-3 sm:p-4">
                   <div className="flex gap-2.5">
-                    <div className="text-xl sm:text-2xl">💚</div>
+                    <div className="text-xl sm:text-2xl flex items-center justify-center">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-400">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" strokeDasharray="2,2.5" fill="currentColor" fillOpacity="0.3"/>
+                      </svg>
+                    </div>
                     <div>
                       <h4 className="text-sm sm:text-base font-semibold text-green-200 mb-1.5">You're Doing Great!</h4>
                       <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
